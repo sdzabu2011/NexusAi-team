@@ -1,28 +1,36 @@
 {
   "name": "nexusai-team",
-  "version": "2.0.0",
-  "description": "NexusAI Team — 15 AI Agents working together. OpenRouter + Groq powered.",
-  "main": "server.js",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
   },
   "dependencies": {
-    "archiver": "^6.0.2",
-    "express": "^4.22.1"
+    "@mux/mux-player-react": "^3.11.7",
+    "axios": "^1.14.0",
+    "clsx": "^2.1.1",
+    "file-saver": "^2.0.5",
+    "framer-motion": "^12.38.0",
+    "jszip": "^3.10.1",
+    "lucide-react": "^1.7.0",
+    "next": "16.2.2",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tailwind-merge": "^3.5.0",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "keywords": [
-    "ai",
-    "openrouter",
-    "groq",
-    "multi-agent",
-    "nexusai"
-  ],
-  "license": "MIT"
+    "@tailwindcss/postcss": "^4",
+    "@types/file-saver": "^2.0.7",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.2",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
 }

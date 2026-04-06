@@ -1,93 +1,36 @@
-# NexusAI Team 🚀
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-**15 AI Agents working together in real-time** — powered by OpenRouter (free models) and Groq.
+## Getting Started
 
-Live demo at: `https://nexusai-team.onrender.com`
-
----
-
-## ✨ Features
-
-- 🎬 **Mux video background** — cinematic animated backdrop
-- 🤖 **15 specialized AI agents** — Code, Image, Video, Debug, Data, SEO, SQL, API and more
-- 📡 **Auto-refresh models** — free models reloaded every 60 seconds from OpenRouter + Groq
-- 🕸 **Canvas visualization** — animated data-flow between agents with glow effects
-- 💬 **Per-agent chat** — each agent has its own system prompt and chat history
-- 📁 **Source browser** — view all source files inline, download as ZIP
-- 🔒 **No login required** — zero auth, open platform
-
----
-
-## 🚀 Deploy to Render
-
-1. Push this repo to GitHub (`.env` is gitignored — keys stay safe)
-2. Create a new **Web Service** on [render.com](https://render.com)
-3. Connect your GitHub repo
-4. Set **Build Command**: `npm install`
-5. Set **Start Command**: `npm start`
-6. Add these **Environment Variables** in the Render dashboard:
-
-| Key | Value |
-|-----|-------|
-| `OPENROUTER_API_KEY` | Your key from openrouter.ai |
-| `GROQ_API_KEY` | Your key from console.groq.com |
-| `MUX_PLAYBACK_ID` | `GEpj38bbxKjkAo6Ij3qmxbYeNTQ011TTnl2eH9ftDTFM` |
-
-> ⚠️ **Never commit your API keys!** Set them only in Render's Environment Variables panel.
-
----
-
-## 🏃 Run locally
+First, run the development server:
 
 ```bash
-# 1. Clone
-git clone https://github.com/YOUR_USERNAME/nexusai-team
-
-# 2. Install
-cd nexusai-team
-npm install
-
-# 3. Set env vars (create .env — it's gitignored)
-echo "OPENROUTER_API_KEY=sk-or-..." >> .env
-echo "GROQ_API_KEY=gsk_..." >> .env
-
-# 4. Start
-npm run dev  # or: npm start
-# → http://localhost:3000
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
----
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## 🤖 The 15 Agents
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-| Agent | Role |
-|-------|------|
-| **CODE** | Full-stack code writer |
-| **DEBUG** | Bug finder & fixer |
-| **TEST** | Unit & E2E test writer |
-| **IMG** | AI image prompt generator |
-| **VIDEO** | Video script & storyboard |
-| **TEXT** | Content & copywriter |
-| **SEO** | SEO optimizer |
-| **TRANS** | Multilingual translator |
-| **DATA** | Data analyst |
-| **MATH** | Step-by-step math solver |
-| **DESIGN** | UI/UX designer |
-| **SQL** | Database query builder |
-| **API** | REST/GraphQL API designer |
-| **SUMM** | Document summarizer |
-| **CHAT** | General-purpose assistant |
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
----
+## Learn More
 
-## 🛠 Tech Stack
+To learn more about Next.js, take a look at the following resources:
 
-- **Backend**: Node.js + Express
-- **Frontend**: Vanilla JS + Canvas API
-- **Video**: Mux HLS via hls.js
-- **AI APIs**: OpenRouter (free models) + Groq
-- **Deploy**: Render.com
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
----
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-MIT License
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
