@@ -30,7 +30,7 @@ export function useCodegen() {
   }, [setIsGenerating, setActiveAgentId]);
 
   const start = useCallback(
-    async (prompt: string) => {
+      async (prompt: string, maxFiles: number = 80) => {
       stopRef.current = false;
       clearAll();
       setIsGenerating(true);
@@ -43,10 +43,11 @@ export function useCodegen() {
       const modelId =
         primaryModel?.id ?? 'meta-llama/llama-3.3-70b-instruct:free';
 
-      for (let i = 0; i < AGENTS.length; i++) {
+      for (let i = 0; i < maxFiles; i++) {
         if (stopRef.current) break;
 
-        const agent = AGENTS[i];
+        // AGENTS[i] o'rniga shunday yozing:
+        const agent = AGENTS[i % AGENTS.length];
         const fileNames = FILE_NAMES[agent.id] ?? [`src/module_${i}.ts`];
         const filename = fileNames[i % fileNames.length];
         const ext = filename.split('.').pop() ?? 'ts';
