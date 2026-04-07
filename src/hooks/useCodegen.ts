@@ -79,7 +79,7 @@ export function useCodegen() {
   }, [setIsGenerating, setActiveAgentId]);
 
   const start = useCallback(
-    async (prompt: string, maxFiles: number = 80) => {
+    async (prompt: string, maxFiles: number = 800) => {
       stopRef.current = false;
       clearAll();
       setIsGenerating(true);

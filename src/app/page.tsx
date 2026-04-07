@@ -28,7 +28,7 @@ export default function NexusAIPage() {
 
   const handleBuild = () => {
     if (!prompt.trim()) { toast('Please enter a project description first', 'error'); return; }
-    start(prompt.trim(), 80);
+    start(prompt.trim(), 800);
     toast('🚀 Build started! 15 agents working…', 'success');
   };
 
