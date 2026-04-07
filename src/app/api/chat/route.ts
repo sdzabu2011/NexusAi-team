@@ -10,7 +10,8 @@ function getGroqKeys(): string[] {
     const k = process.env[`GROQ_API_KEY_${i}`];
     if (k) keys.push(k);
   }
-  return [...new Set(keys)];
+  // Set o'rniga filter bilan deduplicate
+  return keys.filter((k, idx) => keys.indexOf(k) === idx);
 }
 
 function getORKeys(): string[] {
@@ -20,7 +21,7 @@ function getORKeys(): string[] {
     const k = process.env[`OPENROUTER_API_KEY_${i}`];
     if (k) keys.push(k);
   }
-  return [...new Set(keys)];
+  return keys.filter((k, idx) => keys.indexOf(k) === idx);
 }
 
 // ─── Rate limit tracker ───────────────────────────────────
@@ -59,7 +60,6 @@ async function tryKeys(
   for (let i = 0; i < keys.length; i++) {
     const key = pickKey(keys);
 
-    // Hammasi exhausted → reset va birinchisini ishlatish
     if (!key) {
       exhausted.clear();
       return caller(keys[0]);
@@ -83,7 +83,6 @@ async function tryKeys(
     }
   }
 
-  // Barcha urinishlar tugadi → reset
   exhausted.clear();
   return caller(keys[0]);
 }
@@ -118,7 +117,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(data);
     }
 
-    // OpenRouter (default)
     const keys = getORKeys();
     const data = await tryKeys(keys, (key) =>
       chatOpenRouter(model, allMessages, tokens, key)
