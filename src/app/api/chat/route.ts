@@ -171,6 +171,10 @@ function isRateLimitError(msg: string): boolean {
 // Request validation
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Request validation
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface ChatRequestBody {
   provider?: string;
   model: string;
@@ -179,7 +183,11 @@ interface ChatRequestBody {
   maxTokens?: number;
 }
 
-function validateBody(body: unknown): { valid: true; data: ChatRequestBody } | { valid: false; error: string } {
+type ValidationResult =
+  | { valid: true;  data: ChatRequestBody }
+  | { valid: false; error: string };
+
+function validateBody(body: unknown): ValidationResult {
   if (!body || typeof body !== 'object') {
     return { valid: false, error: 'Request body must be a JSON object' };
   }
@@ -197,10 +205,10 @@ function validateBody(body: unknown): { valid: true; data: ChatRequestBody } | {
   return {
     valid: true,
     data: {
-      provider: typeof b.provider === 'string' ? b.provider : 'openrouter',
-      model: b.model,
-      messages: b.messages as Array<{ role: string; content: string }>,
-      system: typeof b.system === 'string' ? b.system : undefined,
+      provider:  typeof b.provider  === 'string' ? b.provider  : 'openrouter',
+      model:     b.model,
+      messages:  b.messages as Array<{ role: string; content: string }>,
+      system:    typeof b.system    === 'string' ? b.system    : undefined,
       maxTokens: typeof b.maxTokens === 'number' ? b.maxTokens : 2048,
     },
   };
@@ -217,46 +225,45 @@ export async function POST(req: NextRequest) {
 
     if (!validation.valid) {
       return NextResponse.json(
-        { error: validation.error },
+        { error: validation.error },   // ✅ TypeScript endi biladi: valid=false → error mavjud
         { status: 400 },
       );
     }
 
+    // ✅ Bu yerda TypeScript biladi: valid=true → data mavjud
     const { provider, model, messages, system, maxTokens } = validation.data;
 
-    // Prepend system message if provided
     const allMessages = system
       ? [{ role: 'system' as const, content: system }, ...messages]
       : messages;
 
-    // ── 2-3 second inter-request cooldown ────────────────────────────────────
+    const tokens = maxTokens ?? 2048;
+
     await delay(getRandomCooldown());
 
-    // ── Route to correct provider ─────────────────────────────────────────────
     if (provider === 'groq') {
       const keys = getGroqKeys();
       if (keys.length === 0) {
         return NextResponse.json(
-          { error: 'No Groq API keys configured. Add GROQ_API_KEY to environment.' },
+          { error: 'No Groq API keys configured.' },
           { status: 503 },
         );
       }
       const data = await tryWithKeyRotation(keys, (key) =>
-        chatGroq(model, allMessages, maxTokens!, key),
+        chatGroq(model, allMessages, tokens, key),
       );
       return NextResponse.json(data);
     }
 
-    // Default: OpenRouter
     const keys = getORKeys();
     if (keys.length === 0) {
       return NextResponse.json(
-        { error: 'No OpenRouter API keys configured. Add OPENROUTER_API_KEY to environment.' },
+        { error: 'No OpenRouter API keys configured.' },
         { status: 503 },
       );
     }
     const data = await tryWithKeyRotation(keys, (key) =>
-      chatOpenRouter(model, allMessages, maxTokens!, key),
+      chatOpenRouter(model, allMessages, tokens, key),
     );
     return NextResponse.json(data);
 
