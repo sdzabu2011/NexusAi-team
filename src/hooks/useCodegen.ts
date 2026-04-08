@@ -7,17 +7,21 @@ import { FILE_NAMES, generateFallbackFilename } from '@/constants/codegen';
 import { randomItem } from '@/lib/utils/helpers';
 import type { GeneratedFile, LogEntry } from '@/types';
 
-const LOG_TYPES = ['write', 'read', 'test', 'deploy', 'optimize', 'review'] as const;
+// ─────────────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────────────
 
-// ---------------------------------------------------------------------------
-// resolveUniqueFilename
-// ---------------------------------------------------------------------------
-// Picks the next candidate name from the agent's static FILE_NAMES pool.
-// If that name is already in `usedPaths` it tries subsequent pool entries
-// (without wrapping / re-using), then falls back to the descriptive
-// suffix-based generator.  The suffix counter is stored per-agent so the
-// fallback names are deterministic and meaningful.
-// ---------------------------------------------------------------------------
+const LOG_TYPES = [
+  'write', 'read', 'test', 'deploy', 'optimize', 'review',
+] as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Unique filename resolver
+// Walks each agent's static FILE_NAMES pool sequentially.
+// Falls back to generateFallbackFilename() when pool is exhausted.
+// The usedPaths Set is the ultimate collision guard.
+// ─────────────────────────────────────────────────────────────────────────────
+
 function resolveUniqueFilename(
   agentId: number,
   poolIndex: number,
@@ -26,20 +30,12 @@ function resolveUniqueFilename(
 ): string {
   const pool = FILE_NAMES[agentId] ?? [];
 
-  // Walk forward through the pool starting from poolIndex — never wrap
-  // (wrapping is what caused the original duplicates).
   for (let offset = 0; offset < pool.length; offset++) {
     const candidate = pool[(poolIndex + offset) % pool.length];
-    // Only accept this candidate if it hasn't been used globally yet AND
-    // its position in the pool is strictly >= poolIndex (no wrap-around re-use)
-    // We relax the "no wrap" rule here and instead rely solely on the Set
-    // to prevent duplicates — the Set check is the true guard.
-    if (!usedPaths.has(candidate)) {
-      return candidate;
-    }
+    if (!usedPaths.has(candidate)) return candidate;
   }
 
-  // All pool entries are exhausted or already used — generate a unique fallback.
+  // Pool exhausted — use descriptive fallback
   const agentMeta = AGENTS.find((a) => a.id === agentId) ?? {
     id: agentId,
     name: `Agent${agentId}`,
@@ -47,21 +43,80 @@ function resolveUniqueFilename(
 
   let counter = fallbackCounters.get(agentId) ?? 1;
   let fallback = generateFallbackFilename(agentMeta, counter);
-
-  // Increment until we find a name that hasn't been used.
   while (usedPaths.has(fallback)) {
-    counter += 1;
+    counter++;
     fallback = generateFallbackFilename(agentMeta, counter);
   }
-
   fallbackCounters.set(agentId, counter + 1);
   return fallback;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Build prompt for each file — context-aware and agent-specific
+// ─────────────────────────────────────────────────────────────────────────────
+
+function buildFilePrompt(
+  projectDescription: string,
+  filename: string,
+  agentName: string,
+  agentRole: string,
+): string {
+  const ext = filename.split('.').pop() ?? 'ts';
+  const langHint: Record<string, string> = {
+    tsx: 'React TypeScript (TSX)',
+    ts:  'TypeScript',
+    js:  'JavaScript',
+    py:  'Python',
+    go:  'Go',
+    rs:  'Rust',
+    sql: 'SQL',
+    css: 'CSS',
+    md:  'Markdown',
+    yaml: 'YAML',
+    json: 'JSON',
+    sh:  'Bash shell script',
+    prisma: 'Prisma schema',
+  };
+
+  return `You are ${agentName}, a ${agentRole}.
+
+Project: ${projectDescription}
+
+Your task: Generate the file "${filename}" (${langHint[ext] ?? ext})
+
+Critical rules — follow exactly:
+1. Output ONLY the raw file content. Nothing else.
+2. NO markdown code fences (no triple backticks).
+3. NO explanation, no comments about what you are doing.
+4. NO preamble like "Here is the file:" or "Sure! Below is..."
+5. The code must be production-ready, complete, and fully functional.
+6. Include proper imports, exports, types, and error handling.
+7. Make it relevant to the project description above.
+8. Name variables and functions descriptively, not generically.
+
+Start writing the file content immediately:`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Strip accidental markdown fences from model output
+// ─────────────────────────────────────────────────────────────────────────────
+
+function stripFences(raw: string): string {
+  return raw
+    .replace(/^```[\w]*\r?\n?/, '')
+    .replace(/\r?\n?```$/, '')
+    .trim();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// useCodegen hook
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function useCodegen() {
   const {
     setIsGenerating,
     setActiveAgentId,
+    setThinkingAgentId,
     setProgress,
     setSynthesized,
     addGeneratedFile,
@@ -72,80 +127,93 @@ export function useCodegen() {
   const { models } = useModelStore();
   const stopRef = useRef(false);
 
+  // ── stop ──────────────────────────────────────────────────────────────────
+
   const stop = useCallback(() => {
     stopRef.current = true;
     setIsGenerating(false);
     setActiveAgentId(null);
-  }, [setIsGenerating, setActiveAgentId]);
+    setThinkingAgentId(null);
+  }, [setIsGenerating, setActiveAgentId, setThinkingAgentId]);
+
+  // ── start ─────────────────────────────────────────────────────────────────
 
   const start = useCallback(
-    async (prompt: string, maxFiles: number = 800) => {
+    async (prompt: string, maxFiles: number = 50) => {
       stopRef.current = false;
       clearAll();
       setIsGenerating(true);
+      setProgress(0);
 
-      // Pick best available model — Groq is faster, OpenRouter as fallback
+      // ── Model selection: prefer Groq (faster), fallback to OpenRouter ──────
       const groqModels = models.filter((m) => m.provider === 'groq');
-      const orModels = models.filter((m) => m.provider === 'openrouter');
-      const primaryModel = groqModels[0] ?? orModels[0];
-      const provider = primaryModel?.provider ?? 'openrouter';
-      const modelId =
-        primaryModel?.id ?? 'meta-llama/llama-3.3-70b-instruct:free';
+      const orModels   = models.filter((m) => m.provider === 'openrouter');
 
-      // -------------------------------------------------------------------
-      // Duplicate-prevention state — scoped to this single generation run.
-      // usedPaths   : every filename/path that has been assigned so far.
-      // poolCursors : per-agent cursor so each agent walks its own pool
-      //               sequentially without jumping back to names already used.
-      // fallbackCounters : per-agent counter for the suffix-based fallback
-      //                    generator; starts at 1 and only increments.
-      // -------------------------------------------------------------------
-      const usedPaths = new Set<string>();
-      const poolCursors = new Map<number, number>();
+      // Use all available models in round-robin for variety
+      const allModels  = [...groqModels, ...orModels];
+      const primaryModel = groqModels[0] ?? orModels[0];
+      const provider  = primaryModel?.provider ?? 'openrouter';
+      const modelId   = primaryModel?.id ?? 'meta-llama/llama-3.3-70b-instruct:free';
+
+      // ── Duplicate-prevention state ─────────────────────────────────────────
+      const usedPaths       = new Set<string>();
+      const poolCursors     = new Map<number, number>();
       const fallbackCounters = new Map<number, number>();
 
+      // ── Main generation loop ───────────────────────────────────────────────
       for (let i = 0; i < maxFiles; i++) {
         if (stopRef.current) break;
 
+        // Round-robin through agents
         const agent = AGENTS[i % AGENTS.length];
 
-        // Advance this agent's pool cursor sequentially.
+        // Sequential pool cursor per agent
         const cursor = poolCursors.get(agent.id) ?? 0;
-
-        // Resolve a collision-free filename for this slot.
         const filename = resolveUniqueFilename(
           agent.id,
           cursor,
           usedPaths,
           fallbackCounters,
         );
-
-        // Mark the chosen path as used and advance the cursor.
         usedPaths.add(filename);
         poolCursors.set(agent.id, cursor + 1);
 
         const ext = filename.split('.').pop() ?? 'ts';
 
+        // Update UI state
         setActiveAgentId(agent.id);
         setProgress(Math.round((i / maxFiles) * 100));
 
-        let content = `// ${agent.name} is generating ${filename}...`;
+        // ── THINKING state — rainbow animation shows now ───────────────────
+        setThinkingAgentId(agent.id);
+
+        let content = `// ${agent.name} — ${filename}\n// Generating…`;
 
         try {
+          // Pick model in round-robin (variety across files)
+          const modelForFile = allModels.length > 0
+            ? allModels[i % allModels.length]
+            : { provider, id: modelId };
+
           const res = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              provider,
-              model: modelId,
+              provider: modelForFile.provider,
+              model: modelForFile.id,
               system: agent.system,
               messages: [
                 {
                   role: 'user',
-                  content: `Project description: ${prompt}\n\nGenerate the file: ${filename}\n\nRules:\n- Output ONLY the raw code\n- No markdown code blocks, no backticks\n- No explanation before or after\n- Make it production-quality and relevant to the project`,
+                  content: buildFilePrompt(
+                    prompt,
+                    filename,
+                    agent.name,
+                    agent.role,
+                  ),
                 },
               ],
-              maxTokens: 1024,
+              maxTokens: 1200,
             }),
           });
 
@@ -153,22 +221,23 @@ export function useCodegen() {
             const data = await res.json();
             const raw: string =
               data?.choices?.[0]?.message?.content ?? content;
-            // Strip accidental markdown code fences if model adds them
-            content = raw
-              .replace(/^```[\w]*\n?/, '')
-              .replace(/\n?```$/, '')
-              .trim();
+            content = stripFences(raw);
           } else {
-            content = `// ${agent.name}: API error ${res.status} — check your API keys in .env`;
+            const errData = await res.json().catch(() => ({}));
+            content = `// ${agent.name}: API error ${res.status}\n// ${errData?.error ?? 'Unknown error'}\n// Retry or check your API keys in Render dashboard`;
           }
         } catch (err) {
-          content = `// ${agent.name} error: ${err instanceof Error ? err.message : 'unknown'}`;
+          content = `// ${agent.name} network error\n// ${err instanceof Error ? err.message : 'Unknown'}\n// Check your internet connection`;
         }
+
+        // ── Thinking done ─────────────────────────────────────────────────
+        setThinkingAgentId(null);
 
         if (stopRef.current) break;
 
+        // ── Build file & log objects ──────────────────────────────────────
         const file: GeneratedFile = {
-          id: `f-${i}`,
+          id: `f-${Date.now()}-${i}`,
           agentId: agent.id,
           agentName: agent.name,
           agentColor: agent.color,
@@ -179,13 +248,19 @@ export function useCodegen() {
           linesAdded: content.split('\n').length,
         };
 
+        const firstMeaningfulLine = content
+          .split('\n')
+          .find((l) => l.trim() && !l.trim().startsWith('//'))
+          ?.trim()
+          .slice(0, 90) ?? content.split('\n')[0].trim().slice(0, 90);
+
         const log: LogEntry = {
-          id: `l-${i}`,
+          id: `l-${Date.now()}-${i}`,
           agentId: agent.id,
           agentName: agent.name,
           agentColor: agent.color,
           filename,
-          snippet: content.split('\n')[0].trim().slice(0, 80),
+          snippet: firstMeaningfulLine,
           timestamp: Date.now(),
           type: randomItem([...LOG_TYPES]),
         };
@@ -194,9 +269,11 @@ export function useCodegen() {
         addLogEntry(log);
       }
 
+      // ── Generation complete ────────────────────────────────────────────────
       if (!stopRef.current) {
         setIsGenerating(false);
         setActiveAgentId(null);
+        setThinkingAgentId(null);
         setSynthesized(true);
         setProgress(100);
       }
@@ -206,6 +283,7 @@ export function useCodegen() {
       clearAll,
       setIsGenerating,
       setActiveAgentId,
+      setThinkingAgentId,
       setProgress,
       setSynthesized,
       addGeneratedFile,

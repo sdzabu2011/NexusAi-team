@@ -89,3 +89,63 @@ html, body { height: 100%; background: var(--bg); color: #e0ecff; -webkit-font-s
   .font-code  { font-family: 'JetBrains Mono', monospace; }
   .tracking-ultra { letter-spacing: 0.22em; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   NexusAI — Thinking Ring (Rainbow border animation)
+   Applied to .thinking-ring class on agent cards
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes rainbowSpin {
+  0%   { border-color: #ff0080; box-shadow: 0 0 0 1px #ff008088, 0 0 16px #ff008044, inset 0 0 8px #ff008022; }
+  14%  { border-color: #ff4500; box-shadow: 0 0 0 1px #ff450088, 0 0 16px #ff450044, inset 0 0 8px #ff450022; }
+  28%  { border-color: #ffd700; box-shadow: 0 0 0 1px #ffd70088, 0 0 16px #ffd70044, inset 0 0 8px #ffd70022; }
+  42%  { border-color: #00ff88; box-shadow: 0 0 0 1px #00ff8888, 0 0 16px #00ff8844, inset 0 0 8px #00ff8822; }
+  57%  { border-color: #00d4ff; box-shadow: 0 0 0 1px #00d4ff88, 0 0 16px #00d4ff44, inset 0 0 8px #00d4ff22; }
+  71%  { border-color: #8b5cf6; box-shadow: 0 0 0 1px #8b5cf688, 0 0 16px #8b5cf644, inset 0 0 8px #8b5cf622; }
+  85%  { border-color: #ec4899; box-shadow: 0 0 0 1px #ec489988, 0 0 16px #ec489944, inset 0 0 8px #ec489922; }
+  100% { border-color: #ff0080; box-shadow: 0 0 0 1px #ff008088, 0 0 16px #ff008044, inset 0 0 8px #ff008022; }
+}
+
+.thinking-ring {
+  border: 2px solid transparent;
+  border-radius: inherit;
+  animation: rainbowSpin 1.8s linear infinite;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Nexus range slider thumb styling
+   ═══════════════════════════════════════════════════════════════ */
+
+.nexus-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.nexus-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.8);
+}
+
+.nexus-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+  cursor: pointer;
+}
+
+.nexus-slider:disabled::-webkit-slider-thumb {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
