@@ -1,7 +1,3 @@
-// src/lib/models/openrouter.ts
-// OpenRouter — yagona provider. Groq yo'q.
-// Key rotation shu yerda HAM ishlaydi (models fetch uchun)
-
 import type { ModelInfo } from '@/types';
 
 const BASE_URL = 'https://openrouter.ai/api/v1';
@@ -23,7 +19,7 @@ export function getAllORKeys(): string[] {
     if (k) keys.push(k);
   }
 
-  return [...new Set(keys)];
+  return Array.from(new Set(keys));
 }
 
 export function getFirstORKey(): string {
@@ -36,15 +32,15 @@ export function getFirstORKey(): string {
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
+export interface ContentPart {
+  type:       string;        // ← string (literal emas — type conflict yo'q)
+  text?:      string;
+  image_url?: { url: string };
+}
+
 export interface ChatMessage {
   role:    'user' | 'assistant' | 'system';
   content: string | ContentPart[];
-}
-
-export interface ContentPart {
-  type:       'text' | 'image_url';
-  text?:      string;
-  image_url?: { url: string };
 }
 
 export interface ORChatResponse {
@@ -142,12 +138,12 @@ export async function chatOpenRouterStream(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Free Models Fetch — multi-key fallback
+// Free Models Fetch
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface ORModelRaw {
-  id:             string;
-  name?:          string;
+  id:              string;
+  name?:           string;
   context_length?: number;
   pricing?: {
     prompt?:     string;
@@ -203,7 +199,7 @@ export async function fetchOpenRouterFreeModels(): Promise<ModelInfo[]> {
     }
   }
 
-  console.error(`[openrouter] All keys failed for models fetch: ${lastError}`);
+  console.error(`[openrouter] All keys failed: ${lastError}`);
   return [];
 }
 

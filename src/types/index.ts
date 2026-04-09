@@ -1,5 +1,3 @@
-// src/types/index.ts
-
 export interface AgentDef {
   id:      number;
   name:    string;
@@ -36,8 +34,14 @@ export interface LogEntry {
 export interface ModelInfo {
   id:             string;
   name:           string;
-  provider:       'openrouter'; // Groq olib tashlandi
+  provider:       'openrouter';
   contextLength?: number;
+}
+
+export interface ContentPart {
+  type:       string;        // ← string (literal emas)
+  text?:      string;
+  image_url?: { url: string };
 }
 
 export interface ChatMessage {
@@ -45,22 +49,14 @@ export interface ChatMessage {
   content: string | ContentPart[];
 }
 
-export interface ContentPart {
-  type:       'text' | 'image_url';
-  text?:      string;
-  image_url?: { url: string };
-}
-
 export type Tab = 'dashboard' | 'files' | 'preview';
 
-// Generation status
 export interface GenerationStatus {
-  phase:     'idle' | 'thinking' | 'generating' | 'synthesizing' | 'done' | 'error';
-  message?:  string;
-  progress:  number;
+  phase:    'idle' | 'thinking' | 'generating' | 'synthesizing' | 'done' | 'error';
+  message?: string;
+  progress: number;
 }
 
-// API Response
 export interface ORChatResponse {
   id:      string;
   model:   string;
