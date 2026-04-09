@@ -18,24 +18,24 @@ import type { AgentDef, ModelInfo } from '@/types';
 
 interface CodexFile {
   filename: string;
-  content:  string;
+  content: string;
   language: string;
-  agentId:  number;
+  agentId: number;
 }
 
 interface Message {
-  id:          string;
-  role:        'user' | 'assistant';
-  content:     string;
-  isCode:      boolean;
-  codeFile?:   CodexFile;
-  agentName?:  string;
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  isCode: boolean;
+  codeFile?: CodexFile;
+  agentName?: string;
   agentColor?: string;
-  error?:      boolean;
+  error?: boolean;
 }
 
 interface Props {
-  open:    boolean;
+  open: boolean;
   onClose: () => void;
 }
 
@@ -44,25 +44,25 @@ interface Props {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const LANG_EXT: Record<string, string> = {
-  typescript: 'ts',   tsx: 'tsx',        javascript: 'js',
-  jsx: 'jsx',         html: 'html',      css: 'css',
-  scss: 'scss',       sass: 'sass',      less: 'less',
-  rust: 'rs',         go: 'go',          cpp: 'cpp',
-  c: 'c',             csharp: 'cs',      java: 'java',
-  swift: 'swift',     kotlin: 'kt',      scala: 'scala',
-  python: 'py',       ruby: 'rb',        php: 'php',
-  perl: 'pl',         lua: 'lua',        luau: 'luau',
-  r: 'r',             julia: 'jl',       matlab: 'm',
-  bash: 'sh',         sh: 'sh',          shell: 'sh',
-  powershell: 'ps1',  zsh: 'sh',
-  sql: 'sql',         graphql: 'graphql', json: 'json',
-  yaml: 'yaml',       yml: 'yaml',        toml: 'toml',
-  xml: 'xml',         markdown: 'md',     md: 'md',
+  typescript: 'ts', tsx: 'tsx', javascript: 'js',
+  jsx: 'jsx', html: 'html', css: 'css',
+  scss: 'scss', sass: 'sass', less: 'less',
+  rust: 'rs', go: 'go', cpp: 'cpp',
+  c: 'c', csharp: 'cs', java: 'java',
+  swift: 'swift', kotlin: 'kt', scala: 'scala',
+  python: 'py', ruby: 'rb', php: 'php',
+  perl: 'pl', lua: 'lua', luau: 'luau',
+  r: 'r', julia: 'jl', matlab: 'm',
+  bash: 'sh', sh: 'sh', shell: 'sh',
+  powershell: 'ps1', zsh: 'sh',
+  sql: 'sql', graphql: 'graphql', json: 'json',
+  yaml: 'yaml', yml: 'yaml', toml: 'toml',
+  xml: 'xml', markdown: 'md', md: 'md',
   dockerfile: 'dockerfile', nginx: 'conf', prisma: 'prisma',
-  proto: 'proto',     terraform: 'tf',    haskell: 'hs',
-  elixir: 'ex',       erlang: 'erl',      clojure: 'clj',
-  dart: 'dart',       gdscript: 'gd',     glsl: 'glsl',
-  hlsl: 'hlsl',       wgsl: 'wgsl',       solidity: 'sol',
+  proto: 'proto', terraform: 'tf', haskell: 'hs',
+  elixir: 'ex', erlang: 'erl', clojure: 'clj',
+  dart: 'dart', gdscript: 'gd', glsl: 'glsl',
+  hlsl: 'hlsl', wgsl: 'wgsl', solidity: 'sol',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -186,41 +186,41 @@ function extractCode(text: string): string {
 
 const BASE_DIRS: Record<string, string> = {
   tsx: 'src/components', jsx: 'src/components',
-  ts:  'src/lib',        js:  'src/lib',
-  py:  'src',            rs:  'src',
-  go:  'cmd',            java: 'src/main/java',
-  cs:  'src',            cpp: 'src',
-  c:   'src',            swift: 'Sources',
-  kt:  'app/src/main',   rb:  'lib',
-  php: 'app',            lua: 'scripts',
-  luau: 'src',           sh:  'scripts',
-  sql: 'db/migrations',  graphql: 'graphql',
-  yaml: 'config',        toml: 'config',
-  json: 'config',        dockerfile: '.',
-  tf:  'terraform',      md:  'docs',
-  html: 'public',        css: 'styles',
-  scss: 'styles',        prisma: 'prisma',
-  proto: 'proto',        gd: 'scripts',
-  dart: 'lib',           glsl: 'shaders',
+  ts: 'src/lib', js: 'src/lib',
+  py: 'src', rs: 'src',
+  go: 'cmd', java: 'src/main/java',
+  cs: 'src', cpp: 'src',
+  c: 'src', swift: 'Sources',
+  kt: 'app/src/main', rb: 'lib',
+  php: 'app', lua: 'scripts',
+  luau: 'src', sh: 'scripts',
+  sql: 'db/migrations', graphql: 'graphql',
+  yaml: 'config', toml: 'config',
+  json: 'config', dockerfile: '.',
+  tf: 'terraform', md: 'docs',
+  html: 'public', css: 'styles',
+  scss: 'styles', prisma: 'prisma',
+  proto: 'proto', gd: 'scripts',
+  dart: 'lib', glsl: 'shaders',
   sol: 'contracts',
 };
 
 const AGENT_DIR_OVERRIDES: Record<number, Record<string, string>> = {
-  1:  { tsx: 'src/components/ui',  css: 'src/styles', html: 'src/components' },
-  2:  { ts: 'src/hooks',           tsx: 'src/components', js: 'src/utils' },
-  3:  { ts: 'src/app/api',         py: 'api',    go: 'api', rs: 'src/api' },
-  4:  { sql: 'db/migrations',      ts: 'src/db', py: 'db',  prisma: 'prisma' },
-  5:  { ts: 'src/lib/auth',        py: 'auth',   go: 'pkg/auth', rs: 'src/auth' },
-  6:  { ts: 'src/store',           py: 'store',  rs: 'src/store' },
-  7:  { sh: 'scripts',             dockerfile: '.', yaml: '.github/workflows', tf: 'terraform' },
-  8:  { json: '.',                 yaml: '.', toml: '.', ts: 'src/config', js: '.' },
-  9:  { tsx: 'src/animations',     ts: 'src/lib/animations', py: 'animations', luau: 'animations' },
+  1: { tsx: 'src/components/ui', css: 'src/styles', html: 'src/components' },
+  2: { ts: 'src/hooks', tsx: 'src/components', js: 'src/utils' },
+  3: { ts: 'src/app/api', py: 'api', go: 'api', rs: 'src/api' },
+  4: { sql: 'db/migrations', ts: 'src/db', py: 'db', prisma: 'prisma' },
+  5: { ts: 'src/lib/auth', py: 'auth', go: 'pkg/auth', rs: 'src/auth' },
+  6: { ts: 'src/store', py: 'store', rs: 'src/store' },
+  7: { sh: 'scripts', dockerfile: '.', yaml: '.github/workflows', tf: 'terraform' },
+  8: { json: '.', yaml: '.', toml: '.', ts: 'src/config', js: '.' },
+  9: { tsx: 'src/animations', ts: 'src/lib/animations', py: 'animations', luau: 'animations' },
   10: { tsx: 'src/components/debug', ts: 'src/lib/debug', py: 'debug' },
-  11: { ts: 'tests',               py: 'tests', rs: 'tests', go: 'tests', java: 'src/test/java' },
-  12: { md: 'docs',                ts: 'docs' },
-  13: { ts: 'src/lib/perf',        tsx: 'src/components/preview', py: 'perf', rs: 'benches' },
-  14: { ts: 'src/lib',             py: 'src/api', graphql: 'graphql', yaml: 'api-spec', proto: 'proto' },
-  15: { ts: 'src/seo',             py: 'seo', md: 'docs/seo' },
+  11: { ts: 'tests', py: 'tests', rs: 'tests', go: 'tests', java: 'src/test/java' },
+  12: { md: 'docs', ts: 'docs' },
+  13: { ts: 'src/lib/perf', tsx: 'src/components/preview', py: 'perf', rs: 'benches' },
+  14: { ts: 'src/lib', py: 'src/api', graphql: 'graphql', yaml: 'api-spec', proto: 'proto' },
+  15: { ts: 'src/seo', py: 'seo', md: 'docs/seo' },
 };
 
 const STOP_WORDS = new Set([
@@ -233,10 +233,10 @@ const STOP_WORDS = new Set([
 ]);
 
 function generateSmartFilename(
-  agent:         AgentDef,
-  lang:          string,
-  ext:           string,
-  userMessage:   string,
+  agent: AgentDef,
+  lang: string,
+  ext: string,
+  userMessage: string,
   existingFiles: CodexFile[],
 ): string {
   const overrides = AGENT_DIR_OVERRIDES[agent.id] ?? {};
@@ -303,8 +303,8 @@ function AgentAvatar({
   size = 28,
   className = '',
 }: {
-  agent:      AgentDef;
-  size?:      number;
+  agent: AgentDef;
+  size?: number;
   className?: string;
 }) {
   const [imgError, setImgError] = useState(false);
@@ -331,12 +331,12 @@ function AgentAvatar({
     <div
       className={`rounded-lg flex items-center justify-center font-black flex-shrink-0 ${className}`}
       style={{
-        width:      size,
-        height:     size,
-        fontSize:   Math.round(size * 0.32),
+        width: size,
+        height: size,
+        fontSize: Math.round(size * 0.32),
         background: `${agent.color}22`,
-        color:      agent.color,
-        border:     `1px solid ${agent.color}44`,
+        color: agent.color,
+        border: `1px solid ${agent.color}44`,
       }}
     >
       {agent.name.slice(0, 2)}
@@ -352,7 +352,7 @@ function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
-    await navigator.clipboard.writeText(text).catch(() => {});
+    await navigator.clipboard.writeText(text).catch(() => { });
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -365,7 +365,7 @@ function CopyButton({ text }: { text: string }) {
     >
       {copied
         ? <Check className="w-3.5 h-3.5 text-emerald-400" />
-        : <Copy  className="w-3.5 h-3.5" />}
+        : <Copy className="w-3.5 h-3.5" />}
     </button>
   );
 }
@@ -392,9 +392,9 @@ function ThinkingDots({ agent }: { agent: AgentDef }) {
             animate={{ color: RAINBOW, y: [0, -5, 0] }}
             transition={{
               duration: 1.4,
-              repeat:   Infinity,
-              delay:    i * 0.08,
-              ease:     'easeInOut',
+              repeat: Infinity,
+              delay: i * 0.08,
+              ease: 'easeInOut',
             }}
           >
             {letter}
@@ -444,8 +444,8 @@ function MessageBubble({ msg }: { msg: Message }) {
           className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 mt-0.5"
           style={{
             background: `${msg.agentColor ?? '#6366f1'}20`,
-            color:       msg.agentColor ?? '#6366f1',
-            border:     `1px solid ${msg.agentColor ?? '#6366f1'}40`,
+            color: msg.agentColor ?? '#6366f1',
+            border: `1px solid ${msg.agentColor ?? '#6366f1'}40`,
           }}
         >
           {msg.agentName?.slice(0, 2) ?? '??'}
@@ -460,7 +460,7 @@ function MessageBubble({ msg }: { msg: Message }) {
             <div
               className="flex items-center gap-2 px-3 py-2"
               style={{
-                background:   `${msg.agentColor ?? '#818cf8'}18`,
+                background: `${msg.agentColor ?? '#818cf8'}18`,
                 borderBottom: `1px solid ${msg.agentColor ?? '#818cf8'}28`,
               }}
             >
@@ -531,16 +531,16 @@ const EXAMPLE_PROMPTS = [
 export function CodexTeamPanel({ open, onClose }: Props) {
   const { models } = useModelStore();
 
-  const [messages,        setMessages]        = useState<Message[]>([]);
-  const [input,           setInput]           = useState('');
-  const [isLoading,       setIsLoading]       = useState(false);
-  const [selectedAgent,   setSelectedAgent]   = useState<AgentDef>(AGENTS[0]);
-  const [selectedModel,   setSelectedModel]   = useState<ModelInfo | null>(null);
-  const [codeFiles,       setCodeFiles]       = useState<CodexFile[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<AgentDef>(AGENTS[0]);
+  const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
+  const [codeFiles, setCodeFiles] = useState<CodexFile[]>([]);
   const [agentPickerOpen, setAgentPickerOpen] = useState(false);
 
-  const scrollRef  = useRef<HTMLDivElement>(null);
-  const inputRef   = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const msgCounter = useRef(0);
 
   // ── Effects ───────────────────────────────────────────────────────────────
@@ -571,10 +571,10 @@ export function CodexTeamPanel({ open, onClose }: Props) {
 
     const userText = input.trim();
     const userMsg: Message = {
-      id:      `u-${++msgCounter.current}`,
-      role:    'user',
+      id: `u-${++msgCounter.current}`,
+      role: 'user',
       content: userText,
-      isCode:  false,
+      isCode: false,
     };
 
     const history = [...messages, userMsg];
@@ -584,18 +584,18 @@ export function CodexTeamPanel({ open, onClose }: Props) {
 
     try {
       const chatPayload = history.map((m) => ({
-        role:    m.role,
+        role: m.role,
         content: m.isCode && m.codeFile ? m.codeFile.content : m.content,
       }));
 
       const res = await fetch('/api/chat', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider:  selectedModel.provider,
-          model:     selectedModel.id,
-          system:    selectedAgent.system,
-          messages:  chatPayload,
+          provider: selectedModel.provider,
+          model: selectedModel.id,
+          system: selectedAgent.system,
+          messages: chatPayload,
           maxTokens: 3000,
         }),
       });
@@ -605,8 +605,8 @@ export function CodexTeamPanel({ open, onClose }: Props) {
         throw new Error((errData as { error?: string }).error ?? `HTTP ${res.status}`);
       }
 
-      const data  = await res.json() as { choices?: Array<{ message?: { content?: string } }> };
-      const raw   = data?.choices?.[0]?.message?.content ?? '';
+      const data = await res.json() as { choices?: Array<{ message?: { content?: string } }> };
+      const raw = data?.choices?.[0]?.message?.content ?? '';
       if (!raw) throw new Error('Empty response from AI');
 
       const codeDetected = isCodeResponse(raw);
@@ -614,36 +614,36 @@ export function CodexTeamPanel({ open, onClose }: Props) {
 
       if (codeDetected) {
         const { lang, ext } = detectLanguage(raw);
-        const cleanCode     = extractCode(raw);
-        const filename      = generateSmartFilename(
+        const cleanCode = extractCode(raw);
+        const filename = generateSmartFilename(
           selectedAgent, lang, ext, userText, codeFiles,
         );
 
         const newFile: CodexFile = {
           filename,
-          content:  cleanCode,
+          content: cleanCode,
           language: lang,
-          agentId:  selectedAgent.id,
+          agentId: selectedAgent.id,
         };
 
         setCodeFiles((prev) => [...prev, newFile]);
 
         assistantMsg = {
-          id:         `a-${++msgCounter.current}`,
-          role:       'assistant',
-          content:    cleanCode,
-          isCode:     true,
-          codeFile:   newFile,
-          agentName:  selectedAgent.name,
+          id: `a-${++msgCounter.current}`,
+          role: 'assistant',
+          content: cleanCode,
+          isCode: true,
+          codeFile: newFile,
+          agentName: selectedAgent.name,
           agentColor: selectedAgent.color,
         };
       } else {
         assistantMsg = {
-          id:         `a-${++msgCounter.current}`,
-          role:       'assistant',
-          content:    raw,
-          isCode:     false,
-          agentName:  selectedAgent.name,
+          id: `a-${++msgCounter.current}`,
+          role: 'assistant',
+          content: raw,
+          isCode: false,
+          agentName: selectedAgent.name,
           agentColor: selectedAgent.color,
         };
       }
@@ -652,12 +652,12 @@ export function CodexTeamPanel({ open, onClose }: Props) {
 
     } catch (err) {
       setMessages([...history, {
-        id:         `e-${++msgCounter.current}`,
-        role:       'assistant',
-        content:    `⚠ ${(err as Error).message}`,
-        isCode:     false,
-        error:      true,
-        agentName:  selectedAgent.name,
+        id: `e-${++msgCounter.current}`,
+        role: 'assistant',
+        content: `⚠ ${(err as Error).message}`,
+        isCode: false,
+        error: true,
+        agentName: selectedAgent.name,
         agentColor: selectedAgent.color,
       }]);
     } finally {
@@ -670,14 +670,14 @@ export function CodexTeamPanel({ open, onClose }: Props) {
   const downloadAll = useCallback(async () => {
     if (codeFiles.length === 0) return;
     const files = codeFiles.map((f, i) => ({
-      id:         `cf-${i}`,
-      agentId:    f.agentId,
-      agentName:  selectedAgent.name,
+      id: `cf-${i}`,
+      agentId: f.agentId,
+      agentName: selectedAgent.name,
       agentColor: selectedAgent.color,
-      filename:   f.filename,
-      content:    f.content,
-      language:   f.language,
-      timestamp:  Date.now(),
+      filename: f.filename,
+      content: f.content,
+      language: f.language,
+      timestamp: Date.now(),
       linesAdded: f.content.split('\n').length,
     }));
     await downloadZip(files, `codex-${selectedAgent.name.toLowerCase()}`);
@@ -693,7 +693,7 @@ export function CodexTeamPanel({ open, onClose }: Props) {
   if (!open) return null;
 
   const orModels = models.filter((m) => m.provider === 'openrouter');
-  const gqModels = models.filter((m) => m.provider === 'groq');
+
 
   return (
     <AnimatePresence>
@@ -718,14 +718,14 @@ export function CodexTeamPanel({ open, onClose }: Props) {
             style={{
               background: 'linear-gradient(135deg,#08091a 0%,#0d0f2a 50%,#06081a 100%)',
               borderLeft: '1px solid rgba(255,255,255,0.08)',
-              boxShadow:  '-20px 0 60px rgba(0,0,0,0.6)',
+              boxShadow: '-20px 0 60px rgba(0,0,0,0.6)',
             }}
           >
             {/* ── Header ─────────────────────────────────────────────────── */}
             <div
               className="flex items-center gap-3 px-5 py-4 flex-shrink-0"
               style={{
-                background:   'linear-gradient(90deg,rgba(88,28,135,0.3),rgba(49,46,129,0.3))',
+                background: 'linear-gradient(90deg,rgba(88,28,135,0.3),rgba(49,46,129,0.3))',
                 borderBottom: '1px solid rgba(255,255,255,0.08)',
               }}
             >
@@ -843,13 +843,19 @@ export function CodexTeamPanel({ open, onClose }: Props) {
                       ))}
                     </optgroup>
                   )}
-                  {gqModels.length > 0 && (
-                    <optgroup label="⚡ Groq">
-                      {gqModels.map((m) => (
+                  <select
+                    value={selectedModel?.id ?? ''}
+                    onChange={(e) =>
+                      setSelectedModel(models.find((m) => m.id === e.target.value) ?? null)
+                    }
+                    className="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-[10px] font-mono text-slate-300 outline-none focus:border-purple-500 max-w-[200px]"
+                  >
+                    <optgroup label="⬡ OpenRouter (Free)">
+                      {models.map((m) => (
                         <option key={m.id} value={m.id}>{m.name}</option>
                       ))}
                     </optgroup>
-                  )}
+                  </select>
                 </select>
               </div>
             </div>
