@@ -26,7 +26,7 @@ async function generateImage(
   key:    string,
 ): Promise<Blob> {
   const res = await fetch(
-    `https://api-inference.huggingface.co/models/${model}`,
+    `https://router.huggingface.co/models/${model}`,
     {
       method:  'POST',
       headers: {
