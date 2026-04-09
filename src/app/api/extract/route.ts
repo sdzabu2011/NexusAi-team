@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import JSZip from 'jszip';
 
+// ─── Route Segment Config (Next.js 14+) ──────────────────────────────────────
+export const dynamic    = 'force-dynamic';
+export const runtime    = 'nodejs';
+export const maxDuration = 60;
+
 // ZIP extract — fayllarni ko'rsatish + AI tahlil
 
 export async function POST(req: NextRequest) {
@@ -70,8 +75,8 @@ export async function POST(req: NextRequest) {
     if (
       name.match(/\.(ts|tsx|js|jsx|py|rs|go|java|cs|cpp|c|rb|php|lua|luau|sql|yaml|yml|json|toml|md|txt|sh|dockerfile|prisma|graphql|html|css|scss)$/)
     ) {
-      const content  = await file.text();
-      const ext      = name.split('.').pop()?.toLowerCase() ?? 'txt';
+      const content = await file.text();
+      const ext     = name.split('.').pop()?.toLowerCase() ?? 'txt';
 
       return NextResponse.json({
         type:     'code',
@@ -85,9 +90,9 @@ export async function POST(req: NextRequest) {
 
     // ── Image ────────────────────────────────────────────────────────────────
     if (name.match(/\.(png|jpg|jpeg|gif|webp|svg|bmp)$/)) {
-      const buffer  = await file.arrayBuffer();
-      const base64  = Buffer.from(buffer).toString('base64');
-      const mime    = file.type || 'image/png';
+      const buffer = await file.arrayBuffer();
+      const base64 = Buffer.from(buffer).toString('base64');
+      const mime   = file.type || 'image/png';
 
       return NextResponse.json({
         type:    'image',
@@ -110,9 +115,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
