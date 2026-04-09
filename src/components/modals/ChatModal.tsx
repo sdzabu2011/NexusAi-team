@@ -1,22 +1,27 @@
-// src/components/modals/ChatModal.tsx
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Trash2, Layers, MessageSquare } from 'lucide-react';
-import { Modal }          from '@/components/ui/Modal';
-import { Button }         from '@/components/ui/Button';
-import { Badge }          from '@/components/ui/Badge';
-import { useModelStore }  from '@/store/modelStore';
-import type { AgentDef, ChatMessage, ModelInfo } from '@/types';
+import { Modal }         from '@/components/ui/Modal';
+import { Button }        from '@/components/ui/Button';
+import { Badge }         from '@/components/ui/Badge';
+import { useModelStore } from '@/store/modelStore';
+import type { AgentDef, ModelInfo } from '@/types';
 
 interface ChatModalProps {
   agent:   AgentDef | null;
   onClose: () => void;
 }
 
+// Local type — faqat string content
+interface LocalChatMessage {
+  role:    'user' | 'assistant' | 'system';
+  content: string;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// System prompt — conversational, no forced code
+// System prompt
 // ─────────────────────────────────────────────────────────────────────────────
 
 function buildChatSystem(agent: AgentDef): string {
@@ -42,7 +47,7 @@ Your expertise: ${agent.role}`;
 export function ChatModal({ agent, onClose }: ChatModalProps) {
   const { models } = useModelStore();
 
-  const [messages,      setMessages]      = useState<ChatMessage[]>([]);
+  const [messages,      setMessages]      = useState<LocalChatMessage[]>([]);
   const [input,         setInput]         = useState('');
   const [isLoading,     setIsLoading]     = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
@@ -51,32 +56,26 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-select first model
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
       setSelectedModel(models[0]);
     }
   }, [models, selectedModel]);
 
-  // Reset on agent change
   useEffect(() => {
     setMessages([]);
     setInput('');
     setCharCount(0);
   }, [agent]);
 
-  // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Focus input when opened
   useEffect(() => {
-    if (agent) {
-      setTimeout(() => inputRef.current?.focus(), 200);
-    }
+    if (agent) setTimeout(() => inputRef.current?.focus(), 200);
   }, [agent]);
 
   // ── Send ──────────────────────────────────────────────────────────────────
@@ -84,7 +83,7 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
   const send = useCallback(async () => {
     if (!input.trim() || !agent || !selectedModel || isLoading) return;
 
-    const userMsg: ChatMessage = { role: 'user', content: input.trim() };
+    const userMsg: LocalChatMessage = { role: 'user', content: input.trim() };
     const history = [...messages, userMsg];
     setMessages(history);
     setInput('');
@@ -117,10 +116,7 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
     } catch (err) {
       setMessages([
         ...history,
-        {
-          role:    'assistant',
-          content: `⚠ Error: ${(err as Error).message}`,
-        },
+        { role: 'assistant', content: `⚠ Error: ${(err as Error).message}` },
       ]);
     } finally {
       setIsLoading(false);
@@ -129,7 +125,6 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
 
   if (!agent) return null;
 
-  // Starter prompts
   const starters = [
     `What are best practices for ${agent.role.toLowerCase()}?`,
     `How would you approach a complex ${agent.role.toLowerCase()} problem?`,
@@ -144,7 +139,6 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
         className="flex items-center gap-4 px-6 py-4 border-b border-white/10 flex-shrink-0"
         style={{ borderTopColor: agent.color, borderTopWidth: 2 }}
       >
-        {/* Avatar */}
         <div
           className="w-11 h-11 rounded-xl flex items-center justify-center font-title font-black text-base flex-shrink-0"
           style={{
@@ -157,7 +151,6 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
           {agent.name.slice(0, 2)}
         </div>
 
-        {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h3 className="font-title text-sm font-bold tracking-widest text-white">
@@ -172,21 +165,17 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
           </p>
         </div>
 
-        {/* Model selector — OpenRouter only */}
+        {/* Model selector */}
         <select
           value={selectedModel?.id ?? ''}
           onChange={(e) =>
-            setSelectedModel(
-              models.find((m) => m.id === e.target.value) ?? null,
-            )
+            setSelectedModel(models.find((m) => m.id === e.target.value) ?? null)
           }
           className="bg-black/50 border border-white/10 rounded-lg px-3 py-1.5 text-[11px] font-mono text-slate-300 outline-none focus:border-indigo-500 max-w-[180px]"
         >
           <optgroup label="⬡ OpenRouter (Free)">
             {models.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
+              <option key={m.id} value={m.id}>{m.name}</option>
             ))}
           </optgroup>
         </select>
@@ -220,16 +209,11 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
                 {agent.role}
               </p>
             </div>
-
-            {/* Starter prompts */}
             <div className="w-full max-w-sm space-y-1.5">
               {starters.map((s) => (
                 <button
                   key={s}
-                  onClick={() => {
-                    setInput(s);
-                    inputRef.current?.focus();
-                  }}
+                  onClick={() => { setInput(s); inputRef.current?.focus(); }}
                   className="w-full text-left px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono text-slate-600 hover:text-slate-400 hover:bg-white/[0.05] hover:border-white/15 transition-all"
                 >
                   {s}
@@ -239,7 +223,7 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
           </div>
         )}
 
-        {/* Message list */}
+        {/* Messages */}
         <AnimatePresence initial={false}>
           {messages.map((msg, i) => (
             <motion.div
@@ -261,7 +245,6 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
                   {agent.name.slice(0, 2)}
                 </div>
               )}
-
               <div
                 className={[
                   'max-w-[82%] px-4 py-2.5 rounded-2xl text-sm',
@@ -276,7 +259,7 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
             </motion.div>
           ))}
 
-          {/* Loading dots */}
+          {/* Loading */}
           {isLoading && (
             <motion.div
               key="loading"
@@ -302,11 +285,7 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
                     className="w-1.5 h-1.5 rounded-full"
                     style={{ background: agent.color }}
                     animate={{ opacity: [0.3, 1, 0.3], y: [0, -4, 0] }}
-                    transition={{
-                      duration: 0.7,
-                      repeat:   Infinity,
-                      delay:    i * 0.18,
-                    }}
+                    transition={{ duration: 0.7, repeat: Infinity, delay: i * 0.18 }}
                   />
                 ))}
               </div>
@@ -318,7 +297,6 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
       {/* ── Input ── */}
       <div className="px-4 py-3 border-t border-white/10 flex flex-col gap-2 flex-shrink-0">
         <div className="flex gap-2 items-end">
-          {/* Clear */}
           <button
             onClick={() => setMessages([])}
             className="p-2 text-slate-600 hover:text-red-400 transition-colors flex-shrink-0"
@@ -327,7 +305,6 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
             <Trash2 className="w-4 h-4" />
           </button>
 
-          {/* Textarea */}
           <div className="relative flex-1">
             <textarea
               ref={inputRef}
@@ -352,7 +329,6 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
             </span>
           </div>
 
-          {/* Send */}
           <Button
             variant="primary"
             size="sm"
@@ -365,7 +341,6 @@ export function ChatModal({ agent, onClose }: ChatModalProps) {
           </Button>
         </div>
 
-        {/* CodexTeam hint */}
         <p className="text-[9px] font-mono text-slate-700 text-center flex items-center justify-center gap-1">
           <Layers className="w-2.5 h-2.5 text-purple-700" />
           Need code files? Use{' '}
