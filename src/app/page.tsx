@@ -5,6 +5,7 @@ import React, { useState, useCallback } from 'react';
 import {
   Play, Square, Download, Code2,
   RefreshCw, Layers, Zap, Sparkles,
+  Eye, Image as ImageIcon
 } from 'lucide-react';
 import { VideoBackground }       from '@/components/video/VideoBackground';
 import { ConnectionLines }       from '@/components/lines/ConnectionLines';
@@ -23,6 +24,8 @@ import { useCodegen }            from '@/hooks/useCodegen';
 import { useModels }             from '@/hooks/useModels';
 import { downloadZip }           from '@/lib/utils/zipHelper';
 import type { AgentDef }         from '@/types';
+import { VisionModal }           from '@/components/modals/VisionModal';
+import { ImagineModal }          from '@/components/modals/ImagineModal';
 
 export default function NexusAIPage() {
   const {
@@ -32,7 +35,10 @@ export default function NexusAIPage() {
     clearAll,
     maxFiles, setMaxFiles,
   } = useAppStore();
-
+  
+  const [showVision,  setShowVision]  = useState(false);
+  const [showImagine, setShowImagine] = useState(false);
+  
   const { start, stop }   = useCodegen();
   const { count, models } = useModels();
 
@@ -210,6 +216,30 @@ export default function NexusAIPage() {
             {/* Right — actions */}
             <div className="flex items-center gap-2 flex-wrap">
 
+              {/* Vision */}
+              <button
+                onClick={() => setShowVision(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold border transition-all
+                  text-pink-300 border-pink-500/40 bg-pink-950/30
+                  hover:bg-pink-900/40 hover:border-pink-400/60
+                  hover:shadow-[0_0_16px_rgba(236,72,153,0.3)]"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                Vision
+              </button>
+
+              {/* Imagine */}
+              <button
+                onClick={() => setShowImagine(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold border transition-all
+                  text-amber-300 border-amber-500/40 bg-amber-950/30
+                  hover:bg-amber-900/40 hover:border-amber-400/60
+                  hover:shadow-[0_0_16px_rgba(245,158,11,0.3)]"
+              >
+                <ImageIcon className="w-3.5 h-3.5" />
+                Imagine
+              </button>
+
               {/* Codex — always visible */}
               <button
                 onClick={() => setShowCodex(true)}
@@ -270,6 +300,14 @@ export default function NexusAIPage() {
       <CodexTeamPanel
         open={showCodex}
         onClose={() => setShowCodex(false)}
+      />
+      <VisionModal  
+        open={showVision}  
+        onClose={() => setShowVision(false)} 
+      />
+      <ImagineModal 
+        open={showImagine} 
+        onClose={() => setShowImagine(false)} 
       />
     </>
   );
