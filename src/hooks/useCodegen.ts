@@ -2982,6 +2982,7 @@ export function useCodegen() {
                 content: buildFilePrompt(prompt, filename, ext, agent.name, agent.role),
               }],
               maxTokens: 1400,
+              agentId: agent.id,   // ← key taqsimlash uchun
             }),
           });
 
